@@ -65,11 +65,12 @@ int main(int argc, char *argv[]){
 	int number[MAXCLIENTS];
 
     char buffer[BUFFLEN];
+//	char *message = "Hello! Try and guess a number between 0 and 9.\r\n";
 	
 	int n = 0;
 	for (n; n < MAXCLIENTS; n++)
 	{
-		number[n] = 0;
+		number[n] = arandomnumber();
 	}
 	
 #ifdef _WIN32
@@ -147,6 +148,7 @@ int main(int argc, char *argv[]){
                 clientaddrlen = sizeof(clientaddr);
                 memset(&clientaddr, 0, clientaddrlen);
                 c_sockets[client_id] = accept(l_socket, (struct sockaddr*)&clientaddr, &clientaddrlen);
+				//send(c_sockets[client_id], message, strlen(message), 0);
                 printf("Connected:  %s\n",inet_ntoa(clientaddr.sin_addr));
             }
         }
@@ -163,12 +165,31 @@ int main(int argc, char *argv[]){
 				#else
                     int r_len = recv(c_sockets[i],&buffer,BUFFLEN,0);
 				#endif
-					//"converts" it to a number
-					number[i] += atoi(buffer);
-					memset(&buffer[0], 0, sizeof(buffer));
-					buffer[0] = number[i] + '0';
+				
+				int nr = atoi(buffer);
+				memset(&buffer[0], 0, sizeof(buffer));
+				if (isnumber(nr) == 0)
+				{
+					strncpy(buffer, "That was not a number or not between 0 and 9.\n", BUFFLEN);
+				}
+				else
+				{
+					if (moreorless(nr, number[i]) == 1)
+					{
+						strncpy(buffer, "less\n", BUFFLEN);
+					}
+					else if (moreorless(nr, number[i]) == 2)
+					{
+						strncpy(buffer, "more\n", BUFFLEN);
+					}
+					else
+					{
+						strncpy(buffer, "Congratz! You guessed right!\nA new number was assigned.\n", BUFFLEN);
+						number[i] = arandomnumber();
+					}
+				}
 
-                        int w_len = send(c_sockets[i], buffer, r_len,0);
+                        int w_len = send(c_sockets[i], buffer, strlen(buffer),0);
 						//if an error occured (-1), close socket
                            if (w_len <= 0){
 						#ifdef _WIN32
