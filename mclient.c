@@ -84,6 +84,7 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     memset(&sendbuffer,0,BUFFLEN);
+	printf(	"Hello! Try and guess a number between 0 and 9.\r\n");
 #ifdef _WIN32
 #else
     fcntl(0,F_SETFL,fcntl(0,F_GETFL,0)|O_NONBLOCK);
