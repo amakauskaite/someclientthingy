@@ -25,6 +25,26 @@ int findemptyuser(int c_sockets[]){
     return -1;
 }
 
+int arandomnumber (){
+	return rand() % 10;
+}
+
+int moreorless (int usernumber, int systemnumber){
+	if (usernumber > systemnumber)
+		return 1;
+	else if (usernumber < systemnumber)
+		return 2;
+	else
+		return 3;
+}
+
+int isnumber (int number){
+	if (number >= 0 && number <= 9)
+		return 1;
+	else 
+		return 0;
+}
+
 int main(int argc, char *argv[]){
 #ifdef _WIN32
     WSADATA data;
@@ -40,8 +60,17 @@ int main(int argc, char *argv[]){
 
     int maxfd = 0;
     int i;
+	
+	//trying to apply some logic lol
+	int number[MAXCLIENTS];
 
     char buffer[BUFFLEN];
+	
+	int n = 0;
+	for (n; n < MAXCLIENTS; n++)
+	{
+		number[n] = 0;
+	}
 	
 #ifdef _WIN32
     printf("\nInitialising Winsock...");
@@ -80,6 +109,9 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"ERROR #3: bind listening socket.\n");
         return -1;
     }
+	else printf("Binding successfull.\n");
+	
+	printf("Waiting for clients! :)\n");
 
     if (listen(l_socket, 5) <0){
         fprintf(stderr,"ERROR #4: error in listen().\n");
@@ -114,38 +146,43 @@ int main(int argc, char *argv[]){
             if (client_id != -1){
                 clientaddrlen = sizeof(clientaddr);
                 memset(&clientaddr, 0, clientaddrlen);
-                c_sockets[client_id] = accept(l_socket, 
-                    (struct sockaddr*)&clientaddr, &clientaddrlen);
+                c_sockets[client_id] = accept(l_socket, (struct sockaddr*)&clientaddr, &clientaddrlen);
                 printf("Connected:  %s\n",inet_ntoa(clientaddr.sin_addr));
             }
         }
+				//go through all clients
         for (i = 0; i < MAXCLIENTS; i++){
             if (c_sockets[i] != -1){
+				
                 if (FD_ISSET(c_sockets[i], &read_set)){
-                    memset(&buffer,0,BUFFLEN);
+                    //cleans buffer before receiving data
+					memset(&buffer,0,BUFFLEN);
+					//receives data
 				#ifdef _WIN32
 					int r_len = recv(c_sockets[i], buffer, BUFFLEN, 0);
 				#else
                     int r_len = recv(c_sockets[i],&buffer,BUFFLEN,0);
 				#endif
+					//"converts" it to a number
+					number[i] += atoi(buffer);
+					memset(&buffer[0], 0, sizeof(buffer));
+					buffer[0] = number[i] + '0';
 
-                    int j;
-                    for (j = 0; j < MAXCLIENTS; j++){
-                        if (c_sockets[j] != -1){
-                            int w_len = send(c_sockets[j], buffer, r_len,0);
-                            if (w_len <= 0){
-							#ifdef _WIN32
-								closesocket(c_sockets[j]);
-							#else
-                                close(c_sockets[j]);
-							#endif
-                                c_sockets[j] = -1;
-                            }
-                        }
-                    }
+                        int w_len = send(c_sockets[i], buffer, r_len,0);
+						//if an error occured (-1), close socket
+                           if (w_len <= 0){
+						#ifdef _WIN32
+							closesocket(c_sockets[i]);
+						#else
+                               close(c_sockets[i]);
+						#endif
+                               c_sockets[i] = -1;
+							printf("Client %s signed out\n", inet_ntoa(clientaddr.sin_addr));
+                           }          
                 }
             }
         }
+
     }
 
     return 0;
